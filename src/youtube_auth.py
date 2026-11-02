@@ -70,11 +70,21 @@ def get_authenticated_service():
         with open(TOKEN_FILE, "w", encoding="utf-8") as f:
             f.write(creds.to_json())
             
+        # Automatically update .env with refresh token
+        if creds.refresh_token:
+            env_path = ROOT_DIR / ".env"
+            if env_path.exists():
+                with open(env_path, "r", encoding="utf-8") as f:
+                    env_text = f.read()
+                import re
+                env_text = re.sub(r'YOUTUBE_REFRESH_TOKEN=.*', f'YOUTUBE_REFRESH_TOKEN={creds.refresh_token}', env_text)
+                with open(env_path, "w", encoding="utf-8") as f:
+                    f.write(env_text)
+
         print("\n" + "="*60)
         print("🎉 YouTube Authentication Successful!")
         print(f"Refresh Token: {creds.refresh_token}")
-        print("Save this refresh token in your .env or GitHub Secrets:")
-        print(f"YOUTUBE_REFRESH_TOKEN={creds.refresh_token}")
+        print("✅ Automatically saved to token.json and .env!")
         print("="*60 + "\n")
         
         return build("youtube", "v3", credentials=creds)
