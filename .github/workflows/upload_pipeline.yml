@@ -1,4 +1,4 @@
-name: Ben 10 YouTube & Instagram Cloud Automation
+name: Ben 10 YouTube Cloud Automation
 
 on:
   schedule:
@@ -7,7 +7,7 @@ on:
   workflow_dispatch:
     inputs:
       mode:
-        description: 'Upload Mode (full, short, or both)'
+        description: 'Upload Mode (both, full, or short)'
         required: true
         default: 'both'
         type: choice
@@ -15,10 +15,19 @@ on:
           - both
           - full
           - short
+      privacy:
+        description: 'Privacy Status'
+        required: true
+        default: 'public'
+        type: choice
+        options:
+          - public
+          - unlisted
+          - private
       upload_instagram:
         description: 'Upload to Instagram as Reel'
         required: true
-        default: true
+        default: false
         type: boolean
       dry_run:
         description: 'Dry Run (Test without uploading)'
@@ -60,17 +69,18 @@ jobs:
           YOUTUBE_CLIENT_ID: ${{ secrets.YOUTUBE_CLIENT_ID }}
           YOUTUBE_CLIENT_SECRET: ${{ secrets.YOUTUBE_CLIENT_SECRET }}
           YOUTUBE_REFRESH_TOKEN: ${{ secrets.YOUTUBE_REFRESH_TOKEN }}
-          ENABLE_INSTAGRAM_UPLOAD: ${{ secrets.ENABLE_INSTAGRAM_UPLOAD || 'true' }}
+          ENABLE_INSTAGRAM_UPLOAD: ${{ secrets.ENABLE_INSTAGRAM_UPLOAD || 'false' }}
           INSTAGRAM_USERNAME: ${{ secrets.INSTAGRAM_USERNAME }}
           INSTAGRAM_PASSWORD: ${{ secrets.INSTAGRAM_PASSWORD }}
           TELEGRAM_CHANNEL_URL: ${{ secrets.TELEGRAM_CHANNEL_URL }}
           MONETIZATION_DOWNLOAD_URL: ${{ secrets.MONETIZATION_DOWNLOAD_URL }}
-          DEFAULT_PRIVACY_STATUS: "unlisted"
+          DEFAULT_PRIVACY_STATUS: "public"
         run: |
           MODE="${{ github.event.inputs.mode || 'both' }}"
-          INSTA_FLAG="${{ (github.event.inputs.upload_instagram == 'true' || github.event.inputs.upload_instagram == '') && '--instagram' || '' }}"
+          PRIVACY="${{ github.event.inputs.privacy || 'public' }}"
+          INSTA_FLAG="${{ (github.event.inputs.upload_instagram == 'true') && '--instagram' || '' }}"
           DRY_RUN="${{ github.event.inputs.dry_run == 'true' && '--dry-run' || '' }}"
-          python pipeline.py --run-next --mode "$MODE" $INSTA_FLAG $DRY_RUN
+          python pipeline.py --run-next --mode "$MODE" --privacy "$PRIVACY" $INSTA_FLAG $DRY_RUN
 
       - name: Commit and Push Updated State
         run: |
