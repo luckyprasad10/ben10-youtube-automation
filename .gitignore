@@ -1,0 +1,31 @@
+# Python cache
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+venv/
+ENV/
+
+# Credentials and secrets (NEVER COMMIT)
+.env
+*.env
+client_secret.json
+client_secrets.json
+token.json
+oauth_token.json
+
+# Local binaries and downloads
+bin/
+downloads/
+output/
+temp/
+*.mp4
+*.mkv
+*.avi
+*.webm
+
+# OS files
+.DS_Store
+Thumbs.db

@@ -1,0 +1,71 @@
+name: Ben 10 YouTube Automation Pipeline
+
+on:
+  schedule:
+    # Runs twice every day (at 00:00 UTC and 12:00 UTC = 5:30 AM & 5:30 PM IST)
+    - cron: '0 0,12 * * *'
+  workflow_dispatch:
+    inputs:
+      mode:
+        description: 'Upload Mode (full, short, or both)'
+        required: true
+        default: 'both'
+        type: choice
+        options:
+          - both
+          - full
+          - short
+      dry_run:
+        description: 'Dry Run (Test without uploading)'
+        required: true
+        default: false
+        type: boolean
+
+jobs:
+  upload-episode:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: true
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+
+      - name: Install FFmpeg
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y ffmpeg
+
+      - name: Install Dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Run Next Episode Upload Pipeline
+        env:
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          YOUTUBE_CLIENT_ID: ${{ secrets.YOUTUBE_CLIENT_ID }}
+          YOUTUBE_CLIENT_SECRET: ${{ secrets.YOUTUBE_CLIENT_SECRET }}
+          YOUTUBE_REFRESH_TOKEN: ${{ secrets.YOUTUBE_REFRESH_TOKEN }}
+          TELEGRAM_CHANNEL_URL: ${{ secrets.TELEGRAM_CHANNEL_URL }}
+          MONETIZATION_DOWNLOAD_URL: ${{ secrets.MONETIZATION_DOWNLOAD_URL }}
+          DEFAULT_PRIVACY_STATUS: "unlisted"
+        run: |
+          MODE="${{ github.event.inputs.mode || 'both' }}"
+          DRY_RUN="${{ github.event.inputs.dry_run == 'true' && '--dry-run' || '' }}"
+          python pipeline.py --run-next --mode "$MODE" $DRY_RUN
+
+      - name: Commit and Push Updated State
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+          git add state.json
+          git diff --quiet && git diff --staged --quiet || (git commit -m "chore: update episode upload state [skip ci]" && git push)
