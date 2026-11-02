@@ -15,6 +15,8 @@ client_secret.json
 client_secrets.json
 token.json
 oauth_token.json
+ig_session.json
+*.session.json
 
 # Local binaries and downloads
 bin/
@@ -29,3 +31,4 @@ temp/
 # OS files
 .DS_Store
 Thumbs.db
+
