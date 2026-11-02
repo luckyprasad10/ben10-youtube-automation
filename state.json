@@ -8,12 +8,12 @@
     "episode": 1,
     "filename": "S01_E01.mp4",
     "clean_name": "S01 E01",
-    "status": "pending",
+    "status": "in_progress",
     "uploaded_full": false,
-    "uploaded_short": false,
+    "uploaded_short": true,
     "youtube_full_id": null,
-    "youtube_short_id": null,
-    "last_processed": null
+    "youtube_short_id": "xR1AYOwmAX4",
+    "last_processed": "2026-11-02T06:40:06.379147+00:00"
   },
   {
     "id": "1unlb9eAcMj1kqcfnIhmIJP99dqL0rEWc",
