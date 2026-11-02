@@ -23,8 +23,15 @@ DRIVE_FOLDER_URL = f"https://drive.google.com/drive/folders/{DRIVE_FOLDER_ID}"
 
 # Channel & Brand Identity
 CHANNEL_HANDLE = os.getenv("CHANNEL_HANDLE", "@krylox ai")
+INSTAGRAM_HANDLE = os.getenv("INSTAGRAM_HANDLE", "@krylox.ai")
 CONTENT_MODE = os.getenv("CONTENT_MODE", "both")  # 'full', 'short', or 'both'
 DEFAULT_PRIVACY_STATUS = os.getenv("DEFAULT_PRIVACY_STATUS", "unlisted")
+
+# Instagram Automation Config
+ENABLE_INSTAGRAM_UPLOAD = os.getenv("ENABLE_INSTAGRAM_UPLOAD", "false").lower() in ("true", "1", "yes")
+INSTAGRAM_USERNAME = os.getenv("INSTAGRAM_USERNAME", "")
+INSTAGRAM_PASSWORD = os.getenv("INSTAGRAM_PASSWORD", "")
+INSTAGRAM_SESSION_FILE = ROOT_DIR / os.getenv("INSTAGRAM_SESSION_FILE", "ig_session.json")
 
 # Monetization Links
 TELEGRAM_CHANNEL_URL = os.getenv("TELEGRAM_CHANNEL_URL", "https://t.me/krylox_ai")

@@ -109,8 +109,10 @@ class DriveTracker:
                     "status": "pending",
                     "uploaded_full": False,
                     "uploaded_short": False,
+                    "uploaded_insta": False,
                     "youtube_full_id": None,
                     "youtube_short_id": None,
+                    "insta_reel_url": None,
                     "last_processed": None
                 })
 
@@ -144,6 +146,9 @@ class DriveTracker:
                 elif mode == "short":
                     item["uploaded_short"] = True
                     item["youtube_short_id"] = youtube_id
+                elif mode == "insta":
+                    item["uploaded_insta"] = True
+                    item["insta_reel_url"] = youtube_id
                 import datetime
                 item["last_processed"] = datetime.datetime.now(datetime.timezone.utc).isoformat()
                 item["status"] = "completed" if (item.get("uploaded_full") and item.get("uploaded_short")) else "in_progress"

@@ -3,7 +3,7 @@ import sys
 from pathlib import Path
 from typing import Optional
 
-from src.config import CONTENT_MODE, DEFAULT_PRIVACY_STATUS
+from src.config import CONTENT_MODE, DEFAULT_PRIVACY_STATUS, ENABLE_INSTAGRAM_UPLOAD
 from src.tracker import DriveTracker
 from src.downloader import download_episode, cleanup_file
 from src.ai_metadata import generate_video_metadata
@@ -11,11 +11,13 @@ from src.video_processor import extract_keyframe, process_full_episode, create_v
 from src.thumbnail_generator import generate_high_ctr_thumbnail
 from src.youtube_auth import get_authenticated_service
 from src.youtube_uploader import upload_video, set_custom_thumbnail, pin_comment
+from src.instagram_uploader import InstagramReelUploader
 
 def run_pipeline(
     mode: str = CONTENT_MODE,
     dry_run: bool = False,
     privacy: str = DEFAULT_PRIVACY_STATUS,
+    upload_insta: bool = ENABLE_INSTAGRAM_UPLOAD,
     target_id: Optional[str] = None
 ):
     tracker = DriveTracker()
@@ -48,7 +50,7 @@ def run_pipeline(
     print("\n" + "="*70)
     print(f"🎬 Processing Target: {series} | S{season:02d}E{episode_num:02d} - {filename}")
     print(f"Drive ID: {file_id}")
-    print(f"Pipeline Mode: {mode.upper()} | Dry Run: {dry_run}")
+    print(f"Pipeline Mode: {mode.upper()} | Instagram Upload: {upload_insta} | Dry Run: {dry_run}")
     print("="*70 + "\n")
 
     # 3. Download the video file
@@ -110,9 +112,9 @@ def run_pipeline(
                         pin_comment(youtube, yt_id, meta_full["pinned_comment"])
                     tracker.mark_completed(file_id, mode="full", youtube_id=yt_id)
 
-        # 6. Process 60-Second Short if requested
+        # 6. Process 60-Second Short & Instagram Reel if requested
         if mode in ["short", "both"]:
-            print("\n--- 3. Generating Viral 9:16 Short ---")
+            print("\n--- 3. Generating Viral 9:16 Short & Instagram Reel ---")
             processed_short_path = create_viral_short(downloaded_path)
             meta_short = generate_video_metadata(series, season, episode_num, filename, is_short=True)
             print(f"Short Title: {meta_short['title']}")
@@ -121,6 +123,7 @@ def run_pipeline(
                 print("\n[Dry Run] Viral Short created locally:")
                 print(f"Short video: {processed_short_path}")
             else:
+                # YouTube Short Upload
                 print("\n--- 4. Uploading Short to YouTube ---")
                 youtube = get_authenticated_service()
                 short_id = upload_video(
@@ -136,9 +139,30 @@ def run_pipeline(
                         pin_comment(youtube, short_id, meta_short["pinned_comment"])
                     tracker.mark_completed(file_id, mode="short", youtube_id=short_id)
 
+            # Instagram Reel Upload
+            if upload_insta and processed_short_path and processed_short_path.exists():
+                print("\n--- 5. Uploading Viral Reel to Instagram ---")
+                ig = InstagramReelUploader()
+                caption = ig.generate_reel_caption(
+                    series=series,
+                    season=season,
+                    episode=episode_num,
+                    hook_text=meta_short.get("thumbnail_text", "EPIC ALIEN BATTLE!")
+                )
+                if dry_run:
+                    print("[Dry Run] Instagram Reel ready for upload.")
+                    print(f"Generated Instagram Caption:\n{caption}")
+                else:
+                    reel_url = ig.upload_reel(
+                        video_path=processed_short_path,
+                        caption=caption
+                    )
+                    if reel_url:
+                        tracker.mark_completed(file_id, mode="insta", youtube_id=reel_url)
+
     finally:
         # 7. Cleanup disk files to maintain cloud storage limits
-        print("\n--- 5. Storage Cleanup ---")
+        print("\n--- 6. Storage Cleanup ---")
         cleanup_file(downloaded_path)
         if processed_full_path and processed_full_path != downloaded_path:
             cleanup_file(processed_full_path)
@@ -153,15 +177,17 @@ def print_status():
     total = len(tracker.items)
     full_uploaded = sum(1 for i in tracker.items if i.get("uploaded_full"))
     shorts_uploaded = sum(1 for i in tracker.items if i.get("uploaded_short"))
+    insta_uploaded = sum(1 for i in tracker.items if i.get("uploaded_insta"))
     pending = total - full_uploaded
 
     print("\n" + "="*50)
-    print("📊 BEN 10 YOUTUBE PIPELINE STATUS")
+    print("📊 BEN 10 YOUTUBE & INSTAGRAM PIPELINE STATUS")
     print("="*50)
-    print(f"Total Indexed Episodes: {total}")
-    print(f"Full Episodes Uploaded: {full_uploaded}")
-    print(f"Viral Shorts Uploaded:  {shorts_uploaded}")
-    print(f"Pending Next Upload:    {pending}")
+    print(f"Total Indexed Episodes:    {total}")
+    print(f"Full Episodes on YouTube:  {full_uploaded}")
+    print(f"Viral Shorts on YouTube:   {shorts_uploaded}")
+    print(f"Viral Reels on Instagram:  {insta_uploaded}")
+    print(f"Pending Next Upload:       {pending}")
     print("="*50)
 
     next_ep = tracker.get_next_episode("full")
@@ -170,13 +196,14 @@ def print_status():
     print("="*50 + "\n")
 
 def main():
-    parser = argparse.ArgumentParser(description="Automated Ben 10 to YouTube Upload Pipeline")
+    parser = argparse.ArgumentParser(description="Automated Ben 10 to YouTube & Instagram Upload Pipeline")
     parser.add_argument("--scan", action="store_true", help="Scan Google Drive and update state.json")
     parser.add_argument("--status", action="store_true", help="Print current upload statistics")
     parser.add_argument("--run-next", action="store_true", help="Run the pipeline for the next sequential episode")
     parser.add_argument("--mode", choices=["full", "short", "both"], default=CONTENT_MODE, help="Processing mode")
-    parser.add_argument("--dry-run", action="store_true", help="Simulate AI & video processing without uploading to YouTube")
+    parser.add_argument("--dry-run", action="store_true", help="Simulate AI & video processing without uploading")
     parser.add_argument("--privacy", choices=["unlisted", "public", "private"], default=DEFAULT_PRIVACY_STATUS)
+    parser.add_argument("--instagram", action="store_true", default=ENABLE_INSTAGRAM_UPLOAD, help="Enable Instagram Reel upload")
     parser.add_argument("--target-id", type=str, default=None, help="Process a specific Google Drive file ID")
 
     args = parser.parse_args()
@@ -187,7 +214,13 @@ def main():
     elif args.status:
         print_status()
     elif args.run_next:
-        run_pipeline(mode=args.mode, dry_run=args.dry_run, privacy=args.privacy, target_id=args.target_id)
+        run_pipeline(
+            mode=args.mode,
+            dry_run=args.dry_run,
+            privacy=args.privacy,
+            upload_insta=args.instagram,
+            target_id=args.target_id
+        )
     else:
         parser.print_help()
 

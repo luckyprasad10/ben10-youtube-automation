@@ -1,4 +1,4 @@
-name: Ben 10 YouTube Automation Pipeline
+name: Ben 10 YouTube & Instagram Cloud Automation
 
 on:
   schedule:
@@ -15,6 +15,11 @@ on:
           - both
           - full
           - short
+      upload_instagram:
+        description: 'Upload to Instagram as Reel'
+        required: true
+        default: true
+        type: boolean
       dry_run:
         description: 'Dry Run (Test without uploading)'
         required: true
@@ -49,19 +54,23 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r requirements.txt
 
-      - name: Run Next Episode Upload Pipeline
+      - name: Run Next Episode Multi-Platform Upload Pipeline
         env:
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
           YOUTUBE_CLIENT_ID: ${{ secrets.YOUTUBE_CLIENT_ID }}
           YOUTUBE_CLIENT_SECRET: ${{ secrets.YOUTUBE_CLIENT_SECRET }}
           YOUTUBE_REFRESH_TOKEN: ${{ secrets.YOUTUBE_REFRESH_TOKEN }}
+          ENABLE_INSTAGRAM_UPLOAD: ${{ secrets.ENABLE_INSTAGRAM_UPLOAD || 'true' }}
+          INSTAGRAM_USERNAME: ${{ secrets.INSTAGRAM_USERNAME }}
+          INSTAGRAM_PASSWORD: ${{ secrets.INSTAGRAM_PASSWORD }}
           TELEGRAM_CHANNEL_URL: ${{ secrets.TELEGRAM_CHANNEL_URL }}
           MONETIZATION_DOWNLOAD_URL: ${{ secrets.MONETIZATION_DOWNLOAD_URL }}
           DEFAULT_PRIVACY_STATUS: "unlisted"
         run: |
           MODE="${{ github.event.inputs.mode || 'both' }}"
+          INSTA_FLAG="${{ (github.event.inputs.upload_instagram == 'true' || github.event.inputs.upload_instagram == '') && '--instagram' || '' }}"
           DRY_RUN="${{ github.event.inputs.dry_run == 'true' && '--dry-run' || '' }}"
-          python pipeline.py --run-next --mode "$MODE" $DRY_RUN
+          python pipeline.py --run-next --mode "$MODE" $INSTA_FLAG $DRY_RUN
 
       - name: Commit and Push Updated State
         run: |
