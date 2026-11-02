@@ -22,8 +22,8 @@ class InstagramReelUploader:
         password: str = INSTAGRAM_PASSWORD,
         session_file: Path = INSTAGRAM_SESSION_FILE
     ):
-        self.username = username
-        self.password = password
+        self.username = (username or "").lstrip("@").strip()
+        self.password = (password or "").strip()
         self.session_file = session_file
         self.cl = Client()
         self.cl.delay_range = [2, 5]
@@ -104,3 +104,4 @@ Follow {INSTAGRAM_HANDLE} for daily Ben 10 epic battles & alien transformations!
         except Exception as e:
             print(f"[Instagram] ❌ Error uploading reel: {e}")
             return None
+
