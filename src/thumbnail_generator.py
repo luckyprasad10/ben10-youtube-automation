@@ -132,3 +132,4 @@ def generate_high_ctr_thumbnail(
     except Exception as e:
         print(f"[Thumbnail] Failed to generate thumbnail: {e}")
         return None
+

@@ -137,3 +137,4 @@ def create_viral_short(input_path: Path, output_path: Optional[Path] = None, sta
     except Exception as e:
         print(f"[VideoProcessor] Failed to create short: {e}")
     return None
+

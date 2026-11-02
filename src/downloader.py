@@ -38,3 +38,4 @@ def cleanup_file(path: Path):
             print(f"[Downloader] Cleaned up temporary file: {path.name}")
     except Exception as e:
         print(f"[Downloader] Failed to delete {path}: {e}")
+

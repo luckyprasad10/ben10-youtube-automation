@@ -108,3 +108,4 @@ def pin_comment(youtube, video_id: str, comment_text: str) -> bool:
     except Exception as e:
         print(f"[Uploader] Note: Comment posting skipped or restricted: {e}")
         return False
+

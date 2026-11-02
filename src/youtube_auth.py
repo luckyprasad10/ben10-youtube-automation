@@ -94,3 +94,4 @@ if __name__ == "__main__":
             print(f"Connected to YouTube Channel: {ch['snippet']['title']} ({ch['id']})")
     except Exception as e:
         print(f"[YouTube Auth] Setup Error: {e}")
+
